@@ -339,7 +339,7 @@ export default function MainLayout({ user, onLogout }) {
       <GlobalSearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Floating AI Copilot Assistant Widget */}
-      <AiCopilotWidget />
+      <AiCopilotWidget user={user} />
     </div>
   )
 }

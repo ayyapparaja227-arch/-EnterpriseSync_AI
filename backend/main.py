@@ -791,6 +791,25 @@ async def get_ai_career_suggestions(
 ):
     return ai_engine.generate_career_recommendations(current_user, db)
 
+@app.post("/api/ai/chat")
+async def ai_copilot_chat(
+    payload: schemas.ChatRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Enterprise AI Copilot Chat Endpoint
+    Enforces RBAC per user role, accesses PostgreSQL telemetry, and provides action recommendations.
+    """
+    return ai_engine.process_ai_copilot_chat(
+        user=current_user,
+        prompt=payload.prompt,
+        history=payload.history or [],
+        db=db,
+        current_page=payload.current_page
+    )
+
+
 # ==================== NOTIFICATIONS & AUDIT LOGS & REPORTS ====================
 
 @app.get("/api/notifications")

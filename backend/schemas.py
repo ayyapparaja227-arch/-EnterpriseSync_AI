@@ -176,3 +176,11 @@ class TaskReallocateRequest(BaseModel):
     to_user_id: int
     task_count: int = 2
     project_id: Optional[int] = None
+
+# AI Chat Request
+class ChatRequest(BaseModel):
+    prompt: str
+    history: Optional[List[dict]] = []
+    current_page: Optional[str] = None
+    model: Optional[str] = "gemini-2.5-flash"
+
