@@ -40,9 +40,9 @@ const NAV_BY_ROLE = {
 }
 
 const ROLE_BADGE = {
-  employee: { color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', label: 'Employee' },
-  manager:  { color: '#10b981', bg: 'rgba(16,185,129,0.15)', label: 'Manager' },
-  admin:    { color: '#a855f7', bg: 'rgba(168,85,247,0.15)', label: 'Admin' },
+  employee: { color: '#0d9488', bg: 'rgba(13,148,136,0.15)', label: 'Employee' },
+  manager:  { color: '#059669', bg: 'rgba(5,150,105,0.15)',  label: 'Manager' },
+  admin:    { color: '#0f766e', bg: 'rgba(15,118,110,0.18)', label: 'Admin' },
 }
 
 export default function MainLayout({ user, onLogout }) {
@@ -92,20 +92,20 @@ export default function MainLayout({ user, onLogout }) {
       {/* ── Sidebar ── */}
       <aside style={{
         width: open ? 248 : 72, flexShrink: 0,
-        background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+        background: 'linear-gradient(180deg, #0f2027 0%, #1a3040 100%)',
         color: '#fff',
         display: 'flex', flexDirection: 'column',
         transition: 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         overflow: 'hidden',
-        boxShadow: '4px 0 24px rgba(15,23,42,0.12)',
+        boxShadow: '4px 0 28px rgba(15,32,39,0.18)',
         zIndex: 20
       }}>
         {/* Logo */}
         <div style={{ height: 70, display: 'flex', alignItems: 'center', gap: 12, padding: '0 18px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
           <div style={{
-            background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+            background: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)',
             borderRadius: 12, padding: 9, flexShrink: 0,
-            boxShadow: '0 4px 12px rgba(37,99,235,0.4)',
+            boxShadow: '0 4px 12px rgba(13,148,136,0.40)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             <Briefcase size={18} color="#fff" />
@@ -114,9 +114,9 @@ export default function MainLayout({ user, onLogout }) {
             <div style={{ overflow: 'hidden', animation: 'fadeIn 0.3s ease both' }}>
               <div style={{ fontSize: 15, fontWeight: 800, whiteSpace: 'nowrap', color: '#fff', letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 EnterpriseSync
-                <Sparkles size={12} color="#60a5fa" />
+                <Sparkles size={12} color="#5eead4" />
               </div>
-              <div style={{ fontSize: 10, color: '#93c5fd', whiteSpace: 'nowrap', fontWeight: 600, letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: 10, color: '#5eead4', whiteSpace: 'nowrap', fontWeight: 600, letterSpacing: '0.5px' }}>
                 AI WORKFORCE PLATFORM
               </div>
             </div>
@@ -145,9 +145,9 @@ export default function MainLayout({ user, onLogout }) {
                 borderRadius: 10, marginBottom: 4,
                 textDecoration: 'none', fontSize: 13, fontWeight: isActive ? 700 : 500,
                 whiteSpace: 'nowrap', overflow: 'hidden',
-                background: isActive ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'transparent',
-                color: isActive ? '#fff' : '#94a3b8',
-                boxShadow: isActive ? '0 4px 14px rgba(37,99,235,0.35)' : 'none',
+                background: isActive ? 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' : 'transparent',
+                color: isActive ? '#fff' : '#8fa3b0',
+                boxShadow: isActive ? '0 4px 14px rgba(13,148,136,0.30)' : 'none',
                 transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                 justifyContent: open ? 'flex-start' : 'center'
               })}
@@ -178,7 +178,7 @@ export default function MainLayout({ user, onLogout }) {
           {open && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 8, background: 'rgba(255,255,255,0.04)', borderRadius: 12 }}>
               <div style={{ position: 'relative' }}>
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#2563eb,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, color: '#fff' }}>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#0d9488,#14b8a6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, color: '#fff' }}>
                   {user?.name?.[0] ?? 'U'}
                 </div>
                 <span className="es-pulse-dot" style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, border: '2px solid #0f172a' }} />
@@ -307,9 +307,9 @@ export default function MainLayout({ user, onLogout }) {
             }}>
               <div style={{
                 width: 34, height: 34, borderRadius: '50%',
-                background: 'linear-gradient(135deg,#2563eb,#3b82f6)',
+                background: 'linear-gradient(135deg,#0d9488,#14b8a6)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(37,99,235,0.3)'
+                boxShadow: '0 2px 8px rgba(13,148,136,0.28)'
               }}>
                 <span style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>
                   {user?.name?.[0] ?? 'U'}

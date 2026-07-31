@@ -9,12 +9,12 @@ const PORTALS = [
     label: 'Employee',
     emoji: '👤',
     icon: User,
-    color: '#2563eb',
-    gradFrom: '#1d4ed8',
-    gradTo: '#3b82f6',
-    bg: '#eff6ff',
-    border: '#bfdbfe',
-    textColor: '#1e40af',
+    color: '#0d9488',
+    gradFrom: '#0f766e',
+    gradTo: '#14b8a6',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    textColor: '#0f766e',
     description: 'Access your personal profile & assigned tasks',
   },
   {
@@ -35,12 +35,12 @@ const PORTALS = [
     label: 'Admin',
     emoji: '🛡️',
     icon: Shield,
-    color: '#7c3aed',
-    gradFrom: '#6d28d9',
-    gradTo: '#8b5cf6',
-    bg: '#faf5ff',
-    border: '#e9d5ff',
-    textColor: '#4c1d95',
+    color: '#0369a1',
+    gradFrom: '#075985',
+    gradTo: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    textColor: '#0c4a6e',
     description: 'Full access — manage & configure everything',
   },
 ]
@@ -99,36 +99,35 @@ export default function Login({ onLogin }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #0f172a 100%)',
+      background: 'linear-gradient(135deg, #0f2027 0%, #1a3040 60%, #0f2027 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 24, fontFamily: "'Inter', 'Segoe UI', sans-serif",
       position: 'relative', overflow: 'hidden'
     }}>
-      {/* Decorative floating glowing blobs */}
-      <div className="animate-float" style={{ position:'absolute', top:-120, left:-80, width:380, height:380, background:'radial-gradient(circle,rgba(37,99,235,0.22) 0%,transparent 70%)', borderRadius:'50%', pointerEvents:'none' }} />
-      <div className="animate-float delay-2" style={{ position:'absolute', bottom:-100, right:-60, width:320, height:320, background:'radial-gradient(circle,rgba(124,58,237,0.18) 0%,transparent 70%)', borderRadius:'50%', pointerEvents:'none' }} />
-      <div className="animate-float delay-4" style={{ position:'absolute', top:'40%', right:'10%', width:180, height:180, background:'radial-gradient(circle,rgba(5,150,105,0.14) 0%,transparent 70%)', borderRadius:'50%', pointerEvents:'none' }} />
+      {/* Decorative floating subtle radial background glows */}
+      <div className="animate-float" style={{ position:'absolute', top:-120, left:-80, width:380, height:380, background:'radial-gradient(circle,rgba(13,148,136,0.18) 0%,transparent 70%)', borderRadius:'50%', pointerEvents:'none' }} />
+      <div className="animate-float delay-2" style={{ position:'absolute', bottom:-100, right:-60, width:320, height:320, background:'radial-gradient(circle,rgba(5,150,105,0.15) 0%,transparent 70%)', borderRadius:'50%', pointerEvents:'none' }} />
 
       <div className="animate-scaleIn" style={{
         width:'100%', maxWidth:940,
         display:'grid', gridTemplateColumns:'1fr 1fr',
         borderRadius:24, overflow:'hidden',
-        boxShadow:'0 40px 100px rgba(0,0,0,0.6)',
+        boxShadow:'0 40px 100px rgba(15,32,39,0.55)',
         position:'relative', zIndex:1
       }}>
         {/* ── Left Panel ── */}
         <div style={{
-          background:'linear-gradient(180deg,#1e3a8a 0%,#0f172a 100%)',
+          background:'linear-gradient(180deg,#1a3040 0%,#0f2027 100%)',
           padding:'44px 36px', display:'flex', flexDirection:'column', gap:0
         }}>
           {/* Logo */}
           <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:40 }}>
-            <div style={{ background:'#2563eb', borderRadius:12, padding:'10px', display:'flex' }}>
+            <div style={{ background:'#0d9488', borderRadius:12, padding:'10px', display:'flex' }}>
               <Briefcase size={22} color="#fff" />
             </div>
             <div>
               <div style={{ color:'#fff', fontWeight:800, fontSize:17, letterSpacing:-0.3 }}>EnterpriseSync AI</div>
-              <div style={{ color:'#93c5fd', fontSize:11 }}>AI-Powered Enterprise Platform</div>
+              <div style={{ color:'#5eead4', fontSize:11 }}>AI Workforce Platform</div>
             </div>
           </div>
 
