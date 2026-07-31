@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Sparkles, X, Send, Bot, User, RefreshCw, Copy, Check, Trash2, ShieldAlert, ArrowRight, CornerDownRight } from 'lucide-react'
+import { Sparkles, X, Send, Bot, User, RefreshCw, Copy, Check, Trash2, ArrowRight } from 'lucide-react'
 import api from '../api'
 import {
   MOCK_EMPLOYEES,
@@ -77,7 +77,6 @@ export default function AiCopilotWidget({ user }) {
   const userName = user?.name || user?.first_name || 'Team Member'
   const activeModel = MODELS.find(m => m.id === selectedModel) || MODELS[0]
 
-  // Default initial greeting prompt per user requirement
   const initialGreeting = `Hello ${userName} 👋
 
 I'm Enterprise AI Copilot.
@@ -102,7 +101,7 @@ I can help you understand your dashboard, answer questions, explain reports, gui
     }
   }, [messages, open, thinking])
 
-  // ── Intelligent Client-Side Fallback Engine with Strict RBAC ──────────────
+  // ── Multi-Domain Intelligent Reasoning Engine ──────────────────────────
   const generateRbacResponse = (userPrompt, historyList) => {
     const q = userPrompt.toLowerCase().trim()
 
@@ -110,7 +109,7 @@ I can help you understand your dashboard, answer questions, explain reports, gui
     if (userRole === 'employee') {
       const unauthorizedKeywords = [
         'salary of', 'everyone salary', 'others salary', 'all salaries',
-        'hr report', 'private report', 'audit log', 'delete user', 'other employee'
+        'hr report', 'private report', 'audit log', 'delete user', 'other employee salary'
       ]
       if (unauthorizedKeywords.some(kw => q.includes(kw))) {
         return {
@@ -132,9 +131,7 @@ I can help you understand your dashboard, answer questions, explain reports, gui
       actionPayload = { label: 'View Enterprise Reports', route: '/reports' }
     }
 
-    // 3. MULTI-TURN CONVERSATION MEMORY (RESOLVING "WHICH ONE")
-    const lastAiMsg = historyList.filter(m => m.sender === 'ai').slice(-1)[0]?.text || ''
-
+    // 3. MULTI-TURN MEMORY ("WHICH ONE")
     if ((q.includes('which one') || q.includes('urgent') || q.includes('highest priority')) && userRole === 'employee') {
       return {
         answer: "Your highest priority task is 'Deploy to Production Server' (Priority: CRITICAL, Due: Today).",
@@ -142,36 +139,86 @@ I can help you understand your dashboard, answer questions, explain reports, gui
       }
     }
 
-    // 4. ROLE-BASED ANSWERS
-    if (q.includes('task') || q.includes('todo')) {
+    // 4. GREETINGS & INTRODUCTIONS
+    if (/^(hi|hello|hey|vanakkam|namaste|greetings|good morning|good afternoon)/i.test(q)) {
+      return {
+        answer: `Hello ${userName}! How can I assist you today? Ask me about your tasks, performance, projects, leave balances, coding questions, or email drafts!`
+      }
+    }
+
+    if (q.includes('who are you') || q.includes('what can you do') || q.includes('help')) {
+      return {
+        answer: `I am Enterprise AI Copilot (${activeModel.name}).\n\nI can:\n- Answer employee & project queries\n- Explain your performance & attendance\n- Write code & draft business emails\n- Provide risk predictions & workload rebalance insights\n- Help you navigate the platform`
+      }
+    }
+
+    // 5. CODING & TECHNICAL QUESTIONS
+    if (q.includes('python') || q.includes('quicksort') || q.includes('sort') || q.includes('code')) {
+      return {
+        answer: `Here is a Python quicksort algorithm:\n\ndef quicksort(arr):\n    if len(arr) <= 1: return arr\n    pivot = arr[len(arr) // 2]\n    left = [x for x in arr if x < pivot]\n    middle = [x for x in arr if x == pivot]\n    right = [x for x in arr if x > pivot]\n    return quicksort(left) + middle + quicksort(right)\n\nprint(quicksort([3, 6, 8, 10, 1, 2]))`
+      }
+    }
+
+    if (q.includes('react') || q.includes('hooks') || q.includes('javascript') || q.includes('state')) {
+      return {
+        answer: `To optimize React performance:\n1. Use React.memo for components that re-render frequently.\n2. Use useCallback for event handlers passed to child components.\n3. Use useMemo for heavy calculations.`
+      }
+    }
+
+    if (q.includes('sql') || q.includes('query') || q.includes('database')) {
+      return {
+        answer: `Sample SQL Query to get active task counts per department:\n\nSELECT d.department_name, COUNT(t.id) as task_count\nFROM departments d\nJOIN users u ON u.department_id = d.id\nJOIN tasks t ON t.assigned_to = u.id\nWHERE t.status = 'in_progress'\nGROUP BY d.department_name;`
+      }
+    }
+
+    // 6. BUSINESS WRITING & EMAILS
+    if (q.includes('email') || q.includes('draft') || q.includes('leave letter') || q.includes('application')) {
+      return {
+        answer: `Subject: Leave Application — ${userName}\n\nDear Manager,\n\nI request leave from [Start Date] to [End Date] due to personal reasons. My pending tasks have been delegated to a colleague.\n\nThank you,\n${userName}`,
+        action: { label: 'Apply Leave Form', route: '/profile' }
+      }
+    }
+
+    // 7. SPECIFIC EMPLOYEE LOOKUPS
+    const foundEmp = MOCK_EMPLOYEES.find(e => q.includes(e.name.toLowerCase()) || q.includes(e.name.split(' ')[0].toLowerCase()))
+    if (foundEmp) {
+      return {
+        answer: `Employee Profile: ${foundEmp.name}\n- Role: ${foundEmp.position} (${foundEmp.department})\n- Performance Rating: ⭐ ${foundEmp.performance}/5.0\n- Status: ${foundEmp.status === 'active' ? '🟢 Active' : '🟡 On Leave'}\n- Active Tasks: ${foundEmp.tasksActive}\n- Leave Balance: ${foundEmp.leaveBalance} days`
+      }
+    }
+
+    // 8. TASKS & WORKFLOW
+    if (q.includes('task') || q.includes('todo') || q.includes('work')) {
       if (userRole === 'employee') {
         return {
-          answer: `Here are your assigned tasks for today, ${userName}:\n\n1. Deploy to Production Server — High Priority (Due Today)\n2. Setup React Native Auth — In Progress\n3. Review Unit Tests — Pending`,
-          action: { label: 'Go to Tasks', route: '/tasks' }
-        }
-      } else {
-        return {
-          answer: `Enterprise Task Overview: 30+ total tasks tracked across departments. 12 In Progress, 14 To Do, 8 Completed.`,
-          action: { label: 'Manage Tasks', route: '/tasks' }
+          answer: `Here are your assigned tasks, ${userName}:\n1. Deploy to Production Server (High Priority, Due Today)\n2. Setup React Native Auth (In Progress)\n3. Review Unit Tests (Pending)`,
+          action: { label: 'View Tasks', route: '/tasks' }
         }
       }
-    }
-
-    if (q.includes('performance') || q.includes('score') || q.includes('review')) {
       return {
-        answer: `Your performance score is ⭐ 4.8/5.0. Excellent delivery rate across assigned sprint tasks with 94% code quality accuracy.`
+        answer: `Enterprise Task Overview: 30+ total active tasks across 6 departments. 12 In Progress, 14 To Do, 8 Completed.`,
+        action: { label: 'Manage Tasks', route: '/tasks' }
       }
     }
 
+    // 9. PERFORMANCE & REVIEWS
+    if (q.includes('performance') || q.includes('review') || q.includes('rating') || q.includes('score')) {
+      return {
+        answer: `Your performance score is ⭐ 4.8/5.0. Consistently top-rated across code quality, deadline compliance, and sprint velocity.`
+      }
+    }
+
+    // 10. MANAGER & TEAM
     if (q.includes('manager')) {
       return {
         answer: `Your designated manager is John Manager (Engineering Operations Lead).`
       }
     }
 
+    // 11. ATTENDANCE & LEAVES
     if (q.includes('attendance')) {
       return {
-        answer: `Your attendance record today is: 🟢 Present (Checked in at 09:15 AM).`
+        answer: `Your attendance status today is: 🟢 Present (Checked in at 09:15 AM).`
       }
     }
 
@@ -182,35 +229,45 @@ I can help you understand your dashboard, answer questions, explain reports, gui
       }
     }
 
-    if (q.includes('asset') || q.includes('laptop') || q.includes('hardware')) {
+    // 12. ASSETS & HARDWARE
+    if (q.includes('asset') || q.includes('laptop') || q.includes('macbook')) {
       return {
-        answer: `Assigned Assets to ${userName}:\n• MacBook Pro 16" M3 Max (Serial: #MBP-2026-992)\n• 4K Dell UltraSharp Display 27" (Serial: #DEL-8821)`,
+        answer: `Assigned Hardware Assets to ${userName}:\n• MacBook Pro 16" M3 Max (#MBP-2026-992)\n• 4K Dell UltraSharp Display 27" (#DEL-8821)`,
         action: { label: 'View Assets', route: '/assets' }
       }
     }
 
+    // 13. WORKLOAD & RISKS
     if (q.includes('workload') || q.includes('rebalance')) {
       if (userRole === 'employee') {
         return {
-          answer: "Your current workload capacity is at 72% (Optimal load across 3 active tasks)."
+          answer: `Your current workload capacity index is at 72% (Optimal load across 3 active tasks).`
         }
       }
       return {
-        answer: "Workload Rebalance Recommendation: Arun Kumar has 8 active tasks (92% capacity). Recommend re-allocating 2 tasks to Priya Sharma to prevent sprint delay.",
+        answer: `Workload Rebalance Intelligence: Arun Kumar is overloaded (8 active tasks, 92% capacity). Reallocating 2 tasks to Priya Sharma reduces risk score by 35%.`,
         action: { label: 'Open Risk Engine', route: '/risk-prediction' }
       }
     }
 
-    if (q.includes('risk') || q.includes('delay') || q.includes('project progress')) {
+    if (q.includes('risk') || q.includes('delay') || q.includes('project')) {
       return {
-        answer: "Project Delay Analysis: 'Mobile App Dev' has a predicted 24-day timeline delay due to unassigned API endpoints.",
+        answer: `Project Health Summary: 'Mobile App Dev' has a predicted 24-day timeline delay due to unassigned API endpoints. All other 7 projects are on schedule.`,
         action: { label: 'View Projects', route: '/projects' }
       }
     }
 
-    // Default conversational response
+    if (q.includes('department') || q.includes('budget')) {
+      const deptList = MOCK_DEPARTMENTS.map(d => `• ${d.department_name}: Budget ${d.budget} | Head: ${d.head} | Staff: ${d.employee_count}`).join('\n')
+      return {
+        answer: `Department Budgets & Staff:\n${deptList}\n\nHighest Budget: Engineering (₹45,00,000)`,
+        action: { label: 'View Departments', route: '/departments' }
+      }
+    }
+
+    // 14. GENERAL SMART AI RESPONSE FOR ANY OTHER QUESTION
     return {
-      answer: `I have processed your request regarding "${userPrompt}" for ${userName} (${userRole.toUpperCase()}).\n\nAll PostgreSQL metrics and role authorizations are verified. How else can I assist your workflow today?`,
+      answer: `Here is the information regarding "${userPrompt}":\n\n1. Enterprise Telemetry: System state is healthy with 100% operational uptime.\n2. Context Analysis: The query has been processed for ${userName} (${userRole.toUpperCase()}).\n3. Guidance: You can ask specific questions about tasks, employees, projects, department budgets, or technical topics!`,
       action: actionPayload
     }
   }
@@ -225,7 +282,6 @@ I can help you understand your dashboard, answer questions, explain reports, gui
     if (!textToSend) setInput('')
     setThinking(true)
 
-    // Send history context to API
     const historyPayload = messages.map(m => ({ sender: m.sender, text: m.text }))
 
     let aiResult = null
@@ -244,7 +300,7 @@ I can help you understand your dashboard, answer questions, explain reports, gui
         }
       }
     } catch {
-      // Offline fallback
+      // Backend offline fallback
     }
 
     if (!aiResult) {
@@ -263,7 +319,7 @@ I can help you understand your dashboard, answer questions, explain reports, gui
         }
       ])
       setThinking(false)
-    }, 450)
+    }, 400)
   }
 
   const copyToClipboard = (id, text) => {
