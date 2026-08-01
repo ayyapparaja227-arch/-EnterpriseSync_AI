@@ -68,22 +68,28 @@ export default function MainLayout({ user, onLogout }) {
   const NAV = NAV_BY_ROLE[userRole] || NAV_BY_ROLE.employee
   const badge = ROLE_BADGE[userRole] || ROLE_BADGE.employee
 
-  // Compute deadline alert count
-  useEffect(() => {
+  // ── Live unread notification count ─────────────────────────────────────────
+  // Reads from localStorage (shared with Notifications.jsx)
+  // Re-runs whenever Notifications page fires 'es_notifications_updated' event
+  const getUnreadCount = () => {
     try {
-      const MOCK_FALLBACK = [
-        { deadline: new Date(Date.now() - 86400000).toISOString().slice(0,10), status: 'todo' },
-        { deadline: new Date().toISOString().slice(0,10),                      status: 'in_progress' },
-        { deadline: new Date(Date.now() + 86400000).toISOString().slice(0,10), status: 'todo' },
-      ]
-      const today = new Date(); today.setHours(0,0,0,0)
-      const count = MOCK_FALLBACK.filter(t => {
-        if (!t.deadline || t.status === 'completed') return false
-        const due = new Date(t.deadline); due.setHours(0,0,0,0)
-        return Math.round((due - today) / 86400000) <= 1
-      }).length
-      setAlertCount(count)
+      const stored = localStorage.getItem('es_notifications')
+      if (stored) {
+        const notifs = JSON.parse(stored)
+        return notifs.filter(n => !n.is_read).length
+      }
     } catch {}
+    return 0
+  }
+
+  useEffect(() => {
+    // Initial count
+    setAlertCount(getUnreadCount())
+
+    // Update badge every time a notification is marked read
+    const handleUpdate = () => setAlertCount(getUnreadCount())
+    window.addEventListener('es_notifications_updated', handleUpdate)
+    return () => window.removeEventListener('es_notifications_updated', handleUpdate)
   }, [])
 
   return (
