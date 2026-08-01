@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Briefcase, Mail, Lock, Eye, EyeOff, User, Users, Shield, ChevronRight } from 'lucide-react'
+import { Briefcase, Mail, Lock, Eye, EyeOff, User, Users, Shield, ChevronRight, ShieldAlert } from 'lucide-react'
 import axios from 'axios'
 import { mockLogin, MOCK_EMPLOYEES } from '../mockData'
+import { useSearchParams } from 'react-router-dom'
 
 const PORTALS = [
   {
@@ -53,6 +54,8 @@ export default function Login({ onLogin }) {
   const [showPwd, setShowPwd] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [searchParams] = useSearchParams()
+  const sessionExpired = searchParams.get('reason') === 'timeout'
 
   const portal = PORTALS.find(p => p.id === selectedPortal)
 
@@ -186,8 +189,28 @@ export default function Login({ onLogin }) {
 
         {/* ── Right Panel (Form) ── */}
         <div style={{ background:'#fff', padding:'44px 40px', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+
+          {/* Session Expired Banner — shown when auto-logout fired */}
+          {sessionExpired && (
+            <div style={{
+              display:'flex', alignItems:'flex-start', gap:12,
+              background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:12,
+              padding:'14px 16px', marginBottom:24,
+              animation:'fadeInUp 0.4s ease both'
+            }}>
+              <ShieldAlert size={18} color="#f97316" style={{ flexShrink:0, marginTop:1 }} />
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:'#92400e' }}>Session Expired</div>
+                <div style={{ fontSize:12, color:'#b45309', marginTop:2, lineHeight:1.5 }}>
+                  You were automatically logged out after 15 minutes of inactivity. Please sign in again.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Active portal badge */}
           <div style={{ marginBottom:28 }}>
+
             <div style={{
               display:'inline-flex', alignItems:'center', gap:8,
               background:portal.bg, border:`1px solid ${portal.border}`,
