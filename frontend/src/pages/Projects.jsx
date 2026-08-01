@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   FolderKanban, Plus, AlertTriangle, Calendar, User, X, Search,
-  CheckCircle2, Clock, ShieldAlert, Sparkles, TrendingUp, ArrowRight
+  CheckCircle2, Clock, ShieldAlert, Sparkles, TrendingUp, ArrowRight,
+  Users, Mail, Phone, Briefcase, Star, ExternalLink, ChevronRight, CheckSquare
 } from 'lucide-react'
 import api from '../api'
-import { MOCK_PROJECTS } from '../mockData'
+import { MOCK_PROJECTS, MOCK_EMPLOYEES, MOCK_TASKS } from '../mockData'
 
 const MOCK_RISKS = {
   1: {
@@ -84,7 +86,7 @@ const MOCK_RISKS = {
 
 const PBADGE = { low:'#e5e7eb:#374151', medium:'#dbeafe:#1d4ed8', high:'#ffedd5:#c2410c', critical:'#fee2e2:#991b1b' }
 const SBADGE = { active:'#dcfce7:#15803d', completed:'#dbeafe:#1d4ed8', on_hold:'#fef9c3:#92400e', cancelled:'#f3f4f6:#374151' }
-const pbar   = p => p >= 80 ? '#10b981' : p >= 40 ? '#2563eb' : '#f59e0b'
+const pbar   = p => p >= 80 ? '#10b981' : p >= 40 ? '#0d9488' : '#f59e0b'
 
 function Badge({ text, map }) {
   const [bg, color] = (map[text] || '#f3f4f6:#374151').split(':')
@@ -95,10 +97,12 @@ export default function Projects() {
   const [projects, setProjects] = useState(MOCK_PROJECTS)
   const [search, setSearch]     = useState('')
   const [riskModalData, setRiskModalData] = useState(null)
+  const [teamModalData, setTeamModalData] = useState(null)
   const [riskLoad, setRiskLoad] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm]         = useState({ project_name:'', description:'', priority:'medium', end_date:'' })
   const [toast, setToast]       = useState('')
+  const navigate = useNavigate()
 
   useEffect(() => {
     api.get('/api/projects').then(res => {
@@ -128,6 +132,26 @@ export default function Projects() {
     }
   }
 
+  // Find all employees assigned to a specific project
+  const viewProjectTeam = (project) => {
+    const teamNames = project.team || []
+    // Match against MOCK_EMPLOYEES or default fallback
+    const matchedEmployees = MOCK_EMPLOYEES.filter(emp =>
+      teamNames.some(name => emp.name.toLowerCase().includes(name.toLowerCase()))
+    )
+
+    // If no match found, supply default 2 employees
+    const finalTeam = matchedEmployees.length > 0 ? matchedEmployees : [
+      MOCK_EMPLOYEES[0], // Arun Kumar
+      MOCK_EMPLOYEES[1]  // Priya Sharma
+    ]
+
+    setTeamModalData({
+      project,
+      members: finalTeam
+    })
+  }
+
   const createProject = async e => {
     e.preventDefault()
     const storedUser = JSON.parse(localStorage.getItem('es_user') || '{}')
@@ -141,14 +165,13 @@ export default function Projects() {
       status:                'active',
       completion_percentage: 0,
       manager_name:          storedUser.name || 'Manager',
+      team:                  ['Arun Kumar', 'Priya Sharma']
     }
     try {
       const np = await api.post('/api/projects', form)
-      // API success — use server response (may have real ID)
       const merged = { ...newProject, ...np }
       setProjects(p => [...p, merged])
     } catch {
-      // API offline — add locally so the UI still works
       setProjects(p => [...p, newProject])
     }
     setShowForm(false)
@@ -170,75 +193,345 @@ export default function Projects() {
       {/* Header */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div>
-          <h1 style={{ fontSize:24, fontWeight:800, color:'#111827', margin:0 }}>Projects</h1>
-          <p style={{ fontSize:13, color:'#6b7280', marginTop:4 }}>{filtered.length} of {projects.length} active enterprise projects</p>
+          <h1 style={{ fontSize:24, fontWeight:800, color:'var(--text-primary)', margin:0 }}>Projects</h1>
+          <p style={{ fontSize:13, color:'var(--text-secondary)', marginTop:4 }}>
+            {filtered.length} of {projects.length} active enterprise projects • Click any project to inspect assigned team members
+          </p>
         </div>
         <button onClick={() => setShowForm(true)}
-          style={{ display:'flex', alignItems:'center', gap:8, background:'#2563eb', color:'#fff', border:'none', borderRadius:10, padding:'10px 18px', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+          className="es-btn es-btn-primary"
+          style={{ gap:8 }}>
           <Plus size={16} /> New Project
         </button>
       </div>
 
       {/* Search */}
       <div style={{ position:'relative', maxWidth:360 }}>
-        <Search size={16} color="#9ca3af" style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)' }} />
+        <Search size={16} color="var(--text-muted)" style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)' }} />
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search projects…"
-          style={{ width:'100%', paddingLeft:38, paddingRight:16, paddingTop:10, paddingBottom:10, border:'1.5px solid #e5e7eb', borderRadius:10, fontSize:13, outline:'none', boxSizing:'border-box', fontFamily:'inherit' }} />
+          className="es-input"
+          style={{ paddingLeft:38 }} />
       </div>
 
       {/* Projects Grid */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:20 }}>
-        {filtered.map((p, idx) => (
-          <div key={p.project_id} className={`es-card hover-lift animate-fadeInUp delay-${(idx%5)+1}`}
-            style={{ padding:24, display:'flex', flexDirection:'column', gap:14 }}>
-
-            {/* Top */}
-            <div style={{ display:'flex', gap:12 }}>
-              <div style={{ background:'#eff6ff', borderRadius:10, padding:10, flexShrink:0 }}>
-                <FolderKanban size={20} color="#2563eb" />
-              </div>
-              <div style={{ minWidth:0 }}>
-                <h3 style={{ fontSize:15, fontWeight:700, color:'#111827', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.project_name}</h3>
-                <p style={{ fontSize:12, color:'#6b7280', margin:'3px 0 0', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{p.description}</p>
-              </div>
-            </div>
-
-            {/* Badges */}
-            <div style={{ display:'flex', gap:6 }}>
-              <Badge text={p.priority} map={PBADGE} />
-              <Badge text={p.status}   map={SBADGE} />
-            </div>
-
-            {/* Progress */}
-            <div>
-              <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:6 }}>
-                <span style={{ color:'#6b7280' }}>Progress</span>
-                <span style={{ fontWeight:700, color:'#111827' }}>{p.completion_percentage}%</span>
-              </div>
-              <div style={{ height:8, background:'#f3f4f6', borderRadius:4, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${p.completion_percentage}%`, background:pbar(p.completion_percentage), borderRadius:4, transition:'width 0.4s' }} />
-              </div>
-            </div>
-
-            {/* Meta */}
-            <div style={{ display:'flex', gap:14, fontSize:12, color:'#6b7280' }}>
-              <span style={{ display:'flex', alignItems:'center', gap:4 }}><User size={12} />{p.manager_name}</span>
-              <span style={{ display:'flex', alignItems:'center', gap:4 }}><Calendar size={12} />{p.end_date}</span>
-            </div>
-
-            {/* Risk Analysis Action Button */}
-            <button onClick={() => analyseRisk(p)} disabled={riskLoad}
-              style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'10px', borderRadius:10, background:'#fff7ed', color:'#c2410c', border:'1px solid #fed7aa', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit', transition:'all 0.15s ease' }}
-              onMouseEnter={e => { e.currentTarget.style.background='#ffedd5'; e.currentTarget.style.borderColor='#f97316' }}
-              onMouseLeave={e => { e.currentTarget.style.background='#fff7ed'; e.currentTarget.style.borderColor='#fed7aa' }}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:20 }}>
+        {filtered.map((p, idx) => {
+          const teamList = p.team || ['Arun Kumar', 'Priya Sharma']
+          return (
+            <div key={p.project_id} className={`es-card hover-lift animate-fadeInUp delay-${(idx%5)+1}`}
+              style={{ padding:24, display:'flex', flexDirection:'column', gap:14, cursor:'pointer' }}
+              onClick={() => viewProjectTeam(p)}
             >
-              <AlertTriangle size={16} /> AI Risk Analysis & Inspection
-            </button>
-          </div>
-        ))}
+              {/* Top Title & Icon */}
+              <div style={{ display:'flex', gap:12 }}>
+                <div style={{ background:'var(--primary-soft)', border:'1px solid var(--primary-border)', borderRadius:12, padding:10, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <FolderKanban size={22} color="var(--primary)" />
+                </div>
+                <div style={{ minWidth:0, flex:1 }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+                    <h3 style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {p.project_name}
+                    </h3>
+                  </div>
+                  <p style={{ fontSize:12, color:'var(--text-secondary)', margin:'4px 0 0', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.4 }}>
+                    {p.description}
+                  </p>
+                </div>
+              </div>
+
+              {/* Badges */}
+              <div style={{ display:'flex', gap:6 }}>
+                <Badge text={p.priority} map={PBADGE} />
+                <Badge text={p.status}   map={SBADGE} />
+              </div>
+
+              {/* Progress Bar */}
+              <div>
+                <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:6 }}>
+                  <span style={{ color:'var(--text-secondary)', fontWeight:500 }}>Completion</span>
+                  <span style={{ fontWeight:800, color:'var(--text-primary)' }}>{p.completion_percentage}%</span>
+                </div>
+                <div className="es-progress">
+                  <div className="es-progress-fill" style={{ width:`${p.completion_percentage}%`, background:pbar(p.completion_percentage) }} />
+                </div>
+              </div>
+
+              {/* Meta & Manager */}
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:12, color:'var(--text-secondary)', paddingTop:6, borderTop:'1px solid var(--border-light)' }}>
+                <span style={{ display:'flex', alignItems:'center', gap:5, fontWeight:600 }}>
+                  <User size={13} color="var(--primary)" /> {p.manager_name}
+                </span>
+                <span style={{ display:'flex', alignItems:'center', gap:5 }}>
+                  <Calendar size={13} /> {p.end_date}
+                </span>
+              </div>
+
+              {/* 👥 Assigned Team Preview Pill (Clickable) */}
+              <div style={{
+                display:'flex', alignItems:'center', justifyContent:'space-between',
+                padding:'10px 14px', background:'var(--surface-2)', border:'1px solid var(--border)',
+                borderRadius:12, transition:'all 0.15s ease'
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <Users size={16} color="var(--primary)" />
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:700, color:'var(--text-primary)' }}>
+                      Assigned Team ({teamList.length} Members)
+                    </div>
+                    <div style={{ fontSize:10, color:'var(--text-muted)' }}>
+                      {teamList.slice(0, 2).join(', ')}{teamList.length > 2 ? ` +${teamList.length - 2} more` : ''}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight size={16} color="var(--primary)" />
+              </div>
+
+              {/* Actions Footer Buttons */}
+              <div style={{ display:'flex', gap:8, marginTop:4 }} onClick={e => e.stopPropagation()}>
+                <button
+                  onClick={() => viewProjectTeam(p)}
+                  style={{
+                    flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+                    padding:'8px 12px', borderRadius:10,
+                    background:'var(--primary-soft)', color:'var(--primary-dark)',
+                    border:'1px solid var(--primary-border)',
+                    fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+                    transition:'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background='#ccfbf1'}
+                  onMouseLeave={e => e.currentTarget.style.background='var(--primary-soft)'}
+                >
+                  <Users size={14} /> View Team
+                </button>
+
+                <button
+                  onClick={() => analyseRisk(p)}
+                  disabled={riskLoad}
+                  style={{
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+                    padding:'8px 12px', borderRadius:10,
+                    background:'#fff7ed', color:'#c2410c',
+                    border:'1px solid #fed7aa',
+                    fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+                    transition:'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background='#ffedd5'; e.currentTarget.style.borderColor='#f97316' }}
+                  onMouseLeave={e => { e.currentTarget.style.background='#fff7ed'; e.currentTarget.style.borderColor='#fed7aa' }}
+                >
+                  <AlertTriangle size={14} /> Risk Analysis
+                </button>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
-            {/* AI Risk Breakdown Detailed Modal */}
+      {/* ── 👥 ASSIGNED PROJECT TEAM MEMBERS MODAL ────────────────────────── */}
+      {teamModalData && (
+        <div className="es-modal-overlay" onClick={e => e.target === e.currentTarget && setTeamModalData(null)}>
+          <div className="es-modal" style={{ maxWidth: 760, overflow:'hidden' }}>
+
+            {/* Modal Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0f2027 0%, #1a3040 100%)',
+              padding:'24px 30px', color:'#fff', position:'relative'
+            }}>
+              <button
+                onClick={() => setTeamModalData(null)}
+                style={{ position:'absolute', top:20, right:20, background:'rgba(255,255,255,0.12)', border:'none', borderRadius:10, padding:8, cursor:'pointer', display:'flex', color:'#fff' }}
+              >
+                <X size={18} />
+              </button>
+
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
+                <FolderKanban size={20} color="#5eead4" />
+                <span style={{ fontSize:11, fontWeight:800, textTransform:'uppercase', letterSpacing:1, color:'#5eead4' }}>
+                  Assigned Project Team Roster
+                </span>
+              </div>
+              <h2 style={{ fontSize:22, fontWeight:800, margin:0, color:'#fff' }}>
+                {teamModalData.project.project_name}
+              </h2>
+              <p style={{ margin:'4px 0 0', fontSize:13, color:'#94a3b8' }}>
+                Lead Manager: <strong style={{ color:'#fff' }}>{teamModalData.project.manager_name}</strong> • Total Team: <strong style={{ color:'#5eead4' }}>{teamModalData.members.length} Employees</strong>
+              </p>
+
+              {/* Progress Summary Header Bar */}
+              <div style={{ display:'flex', alignItems:'center', gap:16, marginTop:16, background:'rgba(255,255,255,0.08)', padding:'12px 18px', borderRadius:12 }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:4, color:'#e2e8f0' }}>
+                    <span>Project Progress</span>
+                    <span style={{ fontWeight:800, color:'#5eead4' }}>{teamModalData.project.completion_percentage}%</span>
+                  </div>
+                  <div style={{ height:6, background:'rgba(255,255,255,0.15)', borderRadius:4, overflow:'hidden' }}>
+                    <div style={{ height:'100%', width:`${teamModalData.project.completion_percentage}%`, background:'#0d9488', borderRadius:4 }} />
+                  </div>
+                </div>
+                <div style={{ borderLeft:'1px solid rgba(255,255,255,0.15)', paddingLeft:16 }}>
+                  <div style={{ fontSize:10, color:'#94a3b8', textTransform:'uppercase' }}>Target Deadline</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#fff' }}>{teamModalData.project.end_date}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body: Employee Team Cards List */}
+            <div style={{ padding:'24px 30px', display:'flex', flexDirection:'column', gap:16, maxHeight:'65vh', overflowY:'auto', background:'#f8fafc' }}>
+              <div style={{ fontSize:13, fontWeight:700, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:8 }}>
+                <Users size={16} color="var(--primary)" />
+                Employees Working on this Project ({teamModalData.members.length}):
+              </div>
+
+              {teamModalData.members.map(emp => {
+                // Find active tasks for this employee
+                const assignedTasks = MOCK_TASKS.filter(t =>
+                  t.assignee?.toLowerCase().includes(emp.name.toLowerCase()) ||
+                  t.assigned_to === emp.id
+                )
+
+                // Workload calculation
+                const workloadPct = Math.min(98, (emp.tasksActive || 4) * 18)
+                const workloadColor = workloadPct >= 85 ? '#dc2626' : workloadPct >= 65 ? '#d97706' : '#059669'
+
+                return (
+                  <div key={emp.id} className="es-card" style={{ padding:20, background:'#fff', border:'1px solid var(--border)', borderRadius:16, display:'flex', flexDirection:'column', gap:14 }}>
+
+                    {/* Employee Top Header */}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:12 }}>
+                      <div style={{ display:'flex', gap:14, alignItems:'center' }}>
+                        {/* Avatar with Status Dot */}
+                        <div style={{ position:'relative' }}>
+                          <div style={{
+                            width:46, height:46, borderRadius:'50%',
+                            background:'linear-gradient(135deg, #0d9488, #0f766e)',
+                            color:'#fff', fontWeight:800, fontSize:17,
+                            display:'flex', alignItems:'center', justifyContent:'center',
+                            boxShadow:'0 4px 12px rgba(13,148,136,0.25)'
+                          }}>
+                            {emp.name.split(' ').map(n=>n[0]).join('')}
+                          </div>
+                          <span style={{
+                            position:'absolute', bottom:0, right:0,
+                            width:12, height:12, borderRadius:'50%',
+                            background: emp.status === 'active' ? '#059669' : '#f59e0b',
+                            border:'2px solid #fff'
+                          }} title={emp.status} />
+                        </div>
+
+                        <div>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <h4 style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', margin:0 }}>
+                              {emp.name}
+                            </h4>
+                            <span style={{ fontSize:11, padding:'2px 8px', borderRadius:12, background:'var(--primary-soft)', color:'var(--primary-dark)', fontWeight:700, border:'1px solid var(--primary-border)' }}>
+                              {emp.department}
+                            </span>
+                          </div>
+                          <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2, fontWeight:500 }}>
+                            {emp.position}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Performance Rating Pill */}
+                      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:4, background:'#fffbeb', border:'1px solid #fde68a', padding:'5px 12px', borderRadius:20 }}>
+                          <Star size={14} color="#d97706" fill="#d97706" />
+                          <span style={{ fontSize:13, fontWeight:800, color:'#b45309' }}>
+                            {emp.performance || '4.8'} / 5.0
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Details Row (Email, Phone, Workload Bar) */}
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:12, background:'var(--surface-2)', padding:'12px 16px', borderRadius:12, border:'1px solid var(--border-light)' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'var(--text-secondary)' }}>
+                        <Mail size={14} color="var(--primary)" />
+                        <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{emp.email}</span>
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'var(--text-secondary)' }}>
+                        <Phone size={14} color="var(--primary)" />
+                        <span>{emp.phone || '+91 98765 43210'}</span>
+                      </div>
+                      <div style={{ gridColumn:'1 / -1' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, fontWeight:700, marginBottom:4 }}>
+                          <span style={{ color:'var(--text-secondary)' }}>Workload Capacity Load</span>
+                          <span style={{ color: workloadColor }}>{workloadPct}% ({workloadPct >= 85 ? 'High Risk' : workloadPct >= 65 ? 'Optimal' : 'Light'})</span>
+                        </div>
+                        <div className="es-progress" style={{ height:6 }}>
+                          <div className="es-progress-fill" style={{ width:`${workloadPct}%`, background: workloadColor }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Assigned Project Tasks */}
+                    <div>
+                      <div style={{ fontSize:12, fontWeight:700, color:'var(--text-secondary)', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+                        <CheckSquare size={14} color="var(--primary)" />
+                        Active Tasks in this Project ({assignedTasks.length}):
+                      </div>
+                      {assignedTasks.length > 0 ? (
+                        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                          {assignedTasks.map(t => (
+                            <div key={t.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 12px', background:'#fff', border:'1px solid var(--border-light)', borderRadius:8, fontSize:12 }}>
+                              <span style={{ fontWeight:600, color:'var(--text-primary)' }}>• {t.title}</span>
+                              <div style={{ display:'flex', gap:6 }}>
+                                <span style={{ fontSize:10, padding:'2px 8px', borderRadius:10, background:'#eff6ff', color:'#1e40af', fontWeight:700, textTransform:'capitalize' }}>
+                                  {t.status}
+                                </span>
+                                <span style={{ fontSize:10, padding:'2px 8px', borderRadius:10, background: t.priority === 'high' ? '#fff1f2' : '#f0fdf4', color: t.priority === 'high' ? '#991b1b' : '#166534', fontWeight:700, textTransform:'capitalize' }}>
+                                  {t.priority}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize:12, color:'var(--text-muted)', italic:true }}>
+                          Assigned to project architecture & code reviews (No open standalone sprint tickets).
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quick Action Button */}
+                    <div style={{ display:'flex', justifyContent:'flex-end', paddingTop:6, borderTop:'1px solid var(--border-light)' }}>
+                      <button
+                        onClick={() => { setTeamModalData(null); navigate('/employees') }}
+                        style={{
+                          display:'inline-flex', alignItems:'center', gap:6,
+                          padding:'6px 14px', borderRadius:8,
+                          background:'var(--surface-2)', border:'1px solid var(--border)',
+                          color:'var(--text-secondary)', fontSize:12, fontWeight:700,
+                          cursor:'pointer', transition:'all 0.15s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+                      >
+                        View Full Employee Profile <ExternalLink size={13} />
+                      </button>
+                    </div>
+
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding:'16px 30px 20px', background:'#fff', borderTop:'1px solid var(--border)', textAlign:'right' }}>
+              <button
+                onClick={() => setTeamModalData(null)}
+                className="es-btn es-btn-primary"
+                style={{ padding:'9px 22px', fontSize:13 }}
+              >
+                Close Team Roster
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* AI Risk Breakdown Detailed Modal */}
       {riskModalData && (
         <div className="es-modal-overlay" onClick={e => e.target === e.currentTarget && setRiskModalData(null)}>
           <div className="es-modal" style={{ maxWidth: 680 }}>
