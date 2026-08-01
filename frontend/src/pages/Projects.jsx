@@ -89,8 +89,9 @@ const SBADGE = { active:'#dcfce7:#15803d', completed:'#dbeafe:#1d4ed8', on_hold:
 const pbar   = p => p >= 80 ? '#10b981' : p >= 40 ? '#0d9488' : '#f59e0b'
 
 function Badge({ text, map }) {
-  const [bg, color] = (map[text] || '#f3f4f6:#374151').split(':')
-  return <span style={{ background:bg, color, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:600, textTransform:'capitalize' }}>{text}</span>
+  const safeText = text || 'medium'
+  const [bg, color] = (map[safeText] || '#f3f4f6:#374151').split(':')
+  return <span style={{ background:bg, color, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:600, textTransform:'capitalize' }}>{safeText}</span>
 }
 
 export default function Projects() {
@@ -106,18 +107,34 @@ export default function Projects() {
 
   useEffect(() => {
     api.get('/api/projects').then(res => {
-      if (Array.isArray(res) && res.length > 0) setProjects(res)
+      if (Array.isArray(res) && res.length > 0) {
+        // Defensive mapping to ensure every project has project_name and team
+        const normalized = res.map(p => ({
+          ...p,
+          project_id: p.project_id || p.id || Math.random(),
+          project_name: p.project_name || p.name || 'Enterprise Project',
+          manager_name: p.manager_name || 'Project Lead',
+          completion_percentage: p.completion_percentage ?? 40,
+          team: p.team || ['Arun Kumar', 'Priya Sharma', 'Vijay Anand'],
+          priority: p.priority || 'medium',
+          status: p.status || 'active',
+          end_date: p.end_date || '2026-12-31'
+        }))
+        setProjects(normalized)
+      }
     }).catch(() => {})
   }, [])
 
-  const filtered = projects.filter(p =>
-    p.project_name.toLowerCase().includes(search.toLowerCase()) ||
-    p.description?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = projects.filter(p => {
+    const pName = p.project_name || p.name || ''
+    const pDesc = p.description || ''
+    return pName.toLowerCase().includes(search.toLowerCase()) ||
+           pDesc.toLowerCase().includes(search.toLowerCase())
+  })
 
   const analyseRisk = async project => {
     setRiskLoad(true)
-    const id = project.project_id
+    const id = project.project_id || project.id
     try {
       const data = await api.get(`/api/risks/predict/${id}`)
       if (data && data.risk_level) {
@@ -132,12 +149,12 @@ export default function Projects() {
     }
   }
 
-  // Find all employees assigned to a specific project
+  // Find all employees assigned to a specific project (100% crash-proof)
   const viewProjectTeam = (project) => {
-    const teamNames = project.team || []
-    // Match against MOCK_EMPLOYEES or default fallback
+    const teamNames = project.team || ['Arun Kumar', 'Priya Sharma']
+    // Match against MOCK_EMPLOYEES
     const matchedEmployees = MOCK_EMPLOYEES.filter(emp =>
-      teamNames.some(name => emp.name.toLowerCase().includes(name.toLowerCase()))
+      teamNames.some(name => (emp.name || '').toLowerCase().includes(String(name).toLowerCase()))
     )
 
     // If no match found, supply default 2 employees
@@ -147,7 +164,13 @@ export default function Projects() {
     ]
 
     setTeamModalData({
-      project,
+      project: {
+        ...project,
+        project_name: project.project_name || project.name || 'Enterprise Project',
+        manager_name: project.manager_name || 'Project Lead',
+        completion_percentage: project.completion_percentage ?? 50,
+        end_date: project.end_date || '2026-12-31'
+      },
       members: finalTeam
     })
   }
@@ -169,7 +192,7 @@ export default function Projects() {
     }
     try {
       const np = await api.post('/api/projects', form)
-      const merged = { ...newProject, ...np }
+      const merged = { ...newProject, ...np, project_name: form.project_name }
       setProjects(p => [...p, merged])
     } catch {
       setProjects(p => [...p, newProject])
@@ -216,9 +239,10 @@ export default function Projects() {
       {/* Projects Grid */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:20 }}>
         {filtered.map((p, idx) => {
+          const pName = p.project_name || p.name || 'Enterprise Project'
           const teamList = p.team || ['Arun Kumar', 'Priya Sharma']
           return (
-            <div key={p.project_id} className={`es-card hover-lift animate-fadeInUp delay-${(idx%5)+1}`}
+            <div key={p.project_id || p.id || idx} className={`es-card hover-lift animate-fadeInUp delay-${(idx%5)+1}`}
               style={{ padding:24, display:'flex', flexDirection:'column', gap:14, cursor:'pointer' }}
               onClick={() => viewProjectTeam(p)}
             >
@@ -230,11 +254,11 @@ export default function Projects() {
                 <div style={{ minWidth:0, flex:1 }}>
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
                     <h3 style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {p.project_name}
+                      {pName}
                     </h3>
                   </div>
                   <p style={{ fontSize:12, color:'var(--text-secondary)', margin:'4px 0 0', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', lineHeight:1.4 }}>
-                    {p.description}
+                    {p.description || 'Enterprise project delivery sprint'}
                   </p>
                 </div>
               </div>
@@ -249,20 +273,20 @@ export default function Projects() {
               <div>
                 <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:6 }}>
                   <span style={{ color:'var(--text-secondary)', fontWeight:500 }}>Completion</span>
-                  <span style={{ fontWeight:800, color:'var(--text-primary)' }}>{p.completion_percentage}%</span>
+                  <span style={{ fontWeight:800, color:'var(--text-primary)' }}>{p.completion_percentage ?? 0}%</span>
                 </div>
                 <div className="es-progress">
-                  <div className="es-progress-fill" style={{ width:`${p.completion_percentage}%`, background:pbar(p.completion_percentage) }} />
+                  <div className="es-progress-fill" style={{ width:`${p.completion_percentage ?? 0}%`, background:pbar(p.completion_percentage ?? 0) }} />
                 </div>
               </div>
 
               {/* Meta & Manager */}
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:12, color:'var(--text-secondary)', paddingTop:6, borderTop:'1px solid var(--border-light)' }}>
                 <span style={{ display:'flex', alignItems:'center', gap:5, fontWeight:600 }}>
-                  <User size={13} color="var(--primary)" /> {p.manager_name}
+                  <User size={13} color="var(--primary)" /> {p.manager_name || 'Project Manager'}
                 </span>
                 <span style={{ display:'flex', alignItems:'center', gap:5 }}>
-                  <Calendar size={13} /> {p.end_date}
+                  <Calendar size={13} /> {p.end_date || '2026-12-31'}
                 </span>
               </div>
 
@@ -350,10 +374,10 @@ export default function Projects() {
                 </span>
               </div>
               <h2 style={{ fontSize:22, fontWeight:800, margin:0, color:'#fff' }}>
-                {teamModalData.project.project_name}
+                {teamModalData.project?.project_name || teamModalData.project?.name || 'Project Team'}
               </h2>
               <p style={{ margin:'4px 0 0', fontSize:13, color:'#94a3b8' }}>
-                Lead Manager: <strong style={{ color:'#fff' }}>{teamModalData.project.manager_name}</strong> • Total Team: <strong style={{ color:'#5eead4' }}>{teamModalData.members.length} Employees</strong>
+                Lead Manager: <strong style={{ color:'#fff' }}>{teamModalData.project?.manager_name || 'Project Lead'}</strong> • Total Team: <strong style={{ color:'#5eead4' }}>{teamModalData.members?.length || 0} Employees</strong>
               </p>
 
               {/* Progress Summary Header Bar */}
@@ -361,15 +385,15 @@ export default function Projects() {
                 <div style={{ flex:1 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:4, color:'#e2e8f0' }}>
                     <span>Project Progress</span>
-                    <span style={{ fontWeight:800, color:'#5eead4' }}>{teamModalData.project.completion_percentage}%</span>
+                    <span style={{ fontWeight:800, color:'#5eead4' }}>{teamModalData.project?.completion_percentage ?? 0}%</span>
                   </div>
                   <div style={{ height:6, background:'rgba(255,255,255,0.15)', borderRadius:4, overflow:'hidden' }}>
-                    <div style={{ height:'100%', width:`${teamModalData.project.completion_percentage}%`, background:'#0d9488', borderRadius:4 }} />
+                    <div style={{ height:'100%', width:`${teamModalData.project?.completion_percentage ?? 0}%`, background:'#0d9488', borderRadius:4 }} />
                   </div>
                 </div>
                 <div style={{ borderLeft:'1px solid rgba(255,255,255,0.15)', paddingLeft:16 }}>
                   <div style={{ fontSize:10, color:'#94a3b8', textTransform:'uppercase' }}>Target Deadline</div>
-                  <div style={{ fontSize:13, fontWeight:700, color:'#fff' }}>{teamModalData.project.end_date}</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#fff' }}>{teamModalData.project?.end_date || '2026-12-31'}</div>
                 </div>
               </div>
             </div>
@@ -378,22 +402,32 @@ export default function Projects() {
             <div style={{ padding:'24px 30px', display:'flex', flexDirection:'column', gap:16, maxHeight:'65vh', overflowY:'auto', background:'#f8fafc' }}>
               <div style={{ fontSize:13, fontWeight:700, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:8 }}>
                 <Users size={16} color="var(--primary)" />
-                Employees Working on this Project ({teamModalData.members.length}):
+                Employees Working on this Project ({teamModalData.members?.length || 0}):
               </div>
 
-              {teamModalData.members.map(emp => {
-                // Find active tasks for this employee
+              {(teamModalData.members || []).map(emp => {
+                const empName = emp?.name || `${emp?.first_name || ''} ${emp?.last_name || ''}`.trim() || 'Team Member'
+                const empInitials = empName.split(' ').map(n => n[0]).filter(Boolean).join('').slice(0, 2) || 'TM'
+                const empDept = emp?.department || 'Engineering'
+                const empPos = emp?.position || 'Software Engineer'
+                const empEmail = emp?.email || 'employee@company.com'
+                const empPhone = emp?.phone || '+91 98765 43210'
+                const empStatus = emp?.status || 'active'
+                const empPerf = emp?.performance || '4.8'
+                const empId = emp?.id || Math.random()
+
+                // Find active tasks for this employee safely
                 const assignedTasks = MOCK_TASKS.filter(t =>
-                  t.assignee?.toLowerCase().includes(emp.name.toLowerCase()) ||
-                  t.assigned_to === emp.id
+                  (t.assignee && t.assignee.toLowerCase().includes(empName.toLowerCase())) ||
+                  (t.assigned_to && t.assigned_to === empId)
                 )
 
                 // Workload calculation
-                const workloadPct = Math.min(98, (emp.tasksActive || 4) * 18)
+                const workloadPct = Math.min(98, (emp?.tasksActive || 4) * 18)
                 const workloadColor = workloadPct >= 85 ? '#dc2626' : workloadPct >= 65 ? '#d97706' : '#059669'
 
                 return (
-                  <div key={emp.id} className="es-card" style={{ padding:20, background:'#fff', border:'1px solid var(--border)', borderRadius:16, display:'flex', flexDirection:'column', gap:14 }}>
+                  <div key={empId} className="es-card" style={{ padding:20, background:'#fff', border:'1px solid var(--border)', borderRadius:16, display:'flex', flexDirection:'column', gap:14 }}>
 
                     {/* Employee Top Header */}
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:12 }}>
@@ -407,27 +441,27 @@ export default function Projects() {
                             display:'flex', alignItems:'center', justifyContent:'center',
                             boxShadow:'0 4px 12px rgba(13,148,136,0.25)'
                           }}>
-                            {emp.name.split(' ').map(n=>n[0]).join('')}
+                            {empInitials}
                           </div>
                           <span style={{
                             position:'absolute', bottom:0, right:0,
                             width:12, height:12, borderRadius:'50%',
-                            background: emp.status === 'active' ? '#059669' : '#f59e0b',
+                            background: empStatus === 'active' ? '#059669' : '#f59e0b',
                             border:'2px solid #fff'
-                          }} title={emp.status} />
+                          }} title={empStatus} />
                         </div>
 
                         <div>
                           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                             <h4 style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', margin:0 }}>
-                              {emp.name}
+                              {empName}
                             </h4>
                             <span style={{ fontSize:11, padding:'2px 8px', borderRadius:12, background:'var(--primary-soft)', color:'var(--primary-dark)', fontWeight:700, border:'1px solid var(--primary-border)' }}>
-                              {emp.department}
+                              {empDept}
                             </span>
                           </div>
                           <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2, fontWeight:500 }}>
-                            {emp.position}
+                            {empPos}
                           </div>
                         </div>
                       </div>
@@ -437,7 +471,7 @@ export default function Projects() {
                         <div style={{ display:'flex', alignItems:'center', gap:4, background:'#fffbeb', border:'1px solid #fde68a', padding:'5px 12px', borderRadius:20 }}>
                           <Star size={14} color="#d97706" fill="#d97706" />
                           <span style={{ fontSize:13, fontWeight:800, color:'#b45309' }}>
-                            {emp.performance || '4.8'} / 5.0
+                            {empPerf} / 5.0
                           </span>
                         </div>
                       </div>
@@ -447,11 +481,11 @@ export default function Projects() {
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:12, background:'var(--surface-2)', padding:'12px 16px', borderRadius:12, border:'1px solid var(--border-light)' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'var(--text-secondary)' }}>
                         <Mail size={14} color="var(--primary)" />
-                        <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{emp.email}</span>
+                        <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{empEmail}</span>
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'var(--text-secondary)' }}>
                         <Phone size={14} color="var(--primary)" />
-                        <span>{emp.phone || '+91 98765 43210'}</span>
+                        <span>{empPhone}</span>
                       </div>
                       <div style={{ gridColumn:'1 / -1' }}>
                         <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, fontWeight:700, marginBottom:4 }}>
@@ -487,7 +521,7 @@ export default function Projects() {
                           ))}
                         </div>
                       ) : (
-                        <div style={{ fontSize:12, color:'var(--text-muted)', italic:true }}>
+                        <div style={{ fontSize:12, color:'var(--text-muted)', fontStyle:'italic' }}>
                           Assigned to project architecture & code reviews (No open standalone sprint tickets).
                         </div>
                       )}
@@ -554,7 +588,7 @@ export default function Projects() {
                   AI Risk Engine Prediction Result
                 </span>
               </div>
-              <h2 style={{ fontSize:24, fontWeight:800, margin:0 }}>{riskModalData.project_name}</h2>
+              <h2 style={{ fontSize:24, fontWeight:800, margin:0 }}>{riskModalData.project_name || riskModalData.name || 'Project Risk'}</h2>
 
               {/* Metrics Pills */}
               <div style={{ display:'flex', gap:14, marginTop:18, flexWrap:'wrap' }}>
