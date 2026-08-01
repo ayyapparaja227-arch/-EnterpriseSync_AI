@@ -416,10 +416,14 @@ export default function Projects() {
                 const empPerf = emp?.performance || '4.8'
                 const empId = emp?.id || Math.random()
 
-                // Find active tasks for this employee safely
-                const assignedTasks = MOCK_TASKS.filter(t =>
-                  (t.assignee && t.assignee.toLowerCase().includes(empName.toLowerCase())) ||
-                  (t.assigned_to && t.assigned_to === empId)
+                // Find active tasks for this employee safely (flatten MOCK_TASKS object)
+                const allTasksList = Array.isArray(MOCK_TASKS)
+                  ? MOCK_TASKS
+                  : Object.values(MOCK_TASKS || {}).flat()
+
+                const assignedTasks = allTasksList.filter(t =>
+                  (t?.assignee && t.assignee.toLowerCase().includes(empName.toLowerCase())) ||
+                  (t?.assigned_to && t.assigned_to === empId)
                 )
 
                 // Workload calculation
