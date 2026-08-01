@@ -13,6 +13,9 @@ import RiskPrediction from './pages/RiskPrediction'
 import Notifications from './pages/Notifications'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import Integrations from './pages/Integrations'
+import Timesheets from './pages/Timesheets'
+import { useIdleTimer, SessionTimeoutModal } from './hooks/useIdleTimer'
 
 // Role-based default home redirect
 function RoleHome({ user }) {
@@ -42,6 +45,17 @@ function AppRoutes() {
       const t = localStorage.getItem('es_token')
       const u = localStorage.getItem('es_user')
       if (t && u) setUser(JSON.parse(u))
+
+      // Apply saved theme on initial app launch
+      const savedTheme = localStorage.getItem('es_theme') || 'light'
+      const isDark = savedTheme === 'dark' || (savedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      if (isDark) {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        document.body.classList.add('dark-mode')
+      } else {
+        document.documentElement.removeAttribute('data-theme')
+        document.body.classList.remove('dark-mode')
+      }
     } catch (_) {}
     setReady(true)
   }, [])
@@ -59,61 +73,91 @@ function AppRoutes() {
     }
   }
 
-  const logout = () => {
+  const logout = (reason) => {
     localStorage.removeItem('es_token')
     localStorage.removeItem('es_user')
     setUser(null)
-    navigate('/login', { replace: true })
+    if (reason === 'timeout') {
+      // Pass a flag so login page can show "Session expired" message
+      navigate('/login?reason=timeout', { replace: true })
+    } else {
+      navigate('/login', { replace: true })
+    }
   }
+
+  // ── Session Idle Timer (15 min idle → 2 min warning → auto logout) ──────────
+  const { showWarning, countdown, stayLoggedIn } = useIdleTimer({
+    onLogout: logout,
+    idleMinutes: 15,
+    warningMinutes: 2,
+    active: !!user   // Only runs when a user is logged in
+  })
 
   if (!ready) return null
 
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/login" element={user ? <Navigate to={user.role === 'employee' ? '/profile' : '/'} replace /> : <Login onLogin={login} />} />
+    <>
+      <Routes>
+        {/* Public */}
+        <Route path="/login" element={user ? <Navigate to={user.role === 'employee' ? '/profile' : '/'} replace /> : <Login onLogin={login} />} />
 
-      {/* Protected */}
-      <Route path="/" element={user ? <MainLayout user={user} onLogout={logout} /> : <Navigate to="/login" replace />}>
+        {/* Protected */}
+        <Route path="/" element={user ? <MainLayout user={user} onLogout={logout} /> : <Navigate to="/login" replace />}>
 
-        {/* Default home — role-based redirect */}
-        <Route index element={<RoleHome user={user} />} />
+          {/* Default home — role-based redirect */}
+          <Route index element={<RoleHome user={user} />} />
 
-        {/* Employee profile */}
-        <Route path="profile" element={<EmployeeSelfProfile />} />
+          {/* Employee profile */}
+          <Route path="profile" element={<EmployeeSelfProfile />} />
 
-        {/* Employees list — manager + admin only */}
-        <Route path="employees" element={
-          <RoleGuard user={user} allowedRoles={['admin', 'manager', 'hr']}>
-            <Employees />
-          </RoleGuard>
-        } />
+          {/* Employees list — manager + admin only */}
+          <Route path="employees" element={
+            <RoleGuard user={user} allowedRoles={['admin', 'manager', 'hr']}>
+              <Employees />
+            </RoleGuard>
+          } />
 
-        {/* Admin / HR only */}
-        <Route path="departments" element={
-          <RoleGuard user={user} allowedRoles={['admin', 'hr']}>
-            <Departments />
-          </RoleGuard>
-        } />
-        <Route path="settings" element={
-          <RoleGuard user={user} allowedRoles={['admin']}>
-            <Settings />
-          </RoleGuard>
-        } />
+          {/* Admin / HR only */}
+          <Route path="departments" element={
+            <RoleGuard user={user} allowedRoles={['admin', 'hr']}>
+              <Departments />
+            </RoleGuard>
+          } />
+          <Route path="settings" element={
+            <RoleGuard user={user} allowedRoles={['admin']}>
+              <Settings />
+            </RoleGuard>
+          } />
 
-        {/* Shared routes */}
-        <Route path="projects"        element={<Projects />} />
-        <Route path="tasks"           element={<Tasks />} />
-        <Route path="assets"          element={<Assets />} />
-        <Route path="risk-prediction" element={<RiskPrediction />} />
-        <Route path="notifications"   element={<Notifications />} />
-        <Route path="reports"         element={<Reports />} />
-      </Route>
+          {/* Shared routes */}
+          <Route path="projects"        element={<Projects />} />
+          <Route path="tasks"           element={<Tasks />} />
+          <Route path="assets"          element={<Assets />} />
+          <Route path="timesheets"      element={<Timesheets />} />
+          <Route path="risk-prediction" element={<RiskPrediction />} />
+          <Route path="notifications"   element={<Notifications />} />
+          <Route path="reports"         element={<Reports />} />
+          <Route path="integrations"    element={
+            <RoleGuard user={user} allowedRoles={['admin']}>
+              <Integrations />
+            </RoleGuard>
+          } />
+        </Route>
 
-      <Route path="*" element={<Navigate to={user ? (user.role === 'employee' ? '/profile' : '/') : '/login'} replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to={user ? (user.role === 'employee' ? '/profile' : '/') : '/login'} replace />} />
+      </Routes>
+
+      {/* ── Session Timeout Warning Modal ── */}
+      <SessionTimeoutModal
+        show={showWarning}
+        countdown={countdown}
+        onStay={stayLoggedIn}
+        onLogout={() => logout('timeout')}
+      />
+    </>
   )
 }
+
 
 export default function App() {
   return (

@@ -3,7 +3,7 @@
 > **Project Name:** EnterpriseSync AI  
 > **Type:** AI-Powered Enterprise Workforce Management System  
 > **Stack:** React (Vite) + FastAPI (Python) + PostgreSQL  
-> **Repository:** https://github.com/ayyapparaja227-arch/-EnterpriseSync_AI  
+> **Repository:** https://github.com/Ruban-raj-143/EnterpriseSync_AI  
 > **Local Dev URL:** http://localhost:5173  
 
 ---

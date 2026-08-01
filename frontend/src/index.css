@@ -73,6 +73,29 @@
   --t-slow:  0.4s;
 }
 
+/* ═══════════════════════════════════════════════════════
+   DARK MODE OVERRIDES
+═══════════════════════════════════════════════════════ */
+[data-theme="dark"], body.dark-mode {
+  --bg:            #0b1319;
+  --surface:       #131f28;
+  --surface-2:     #1c2c38;
+  --border:        #293b49;
+  --border-light:  #20313e;
+
+  --text-primary:   #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted:     #64748b;
+
+  --primary-soft:  rgba(13,148,136,0.18);
+  --primary-border:#14b8a6;
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 14px rgba(0,0,0,0.5);
+  --shadow-lg:  0 12px 32px rgba(0,0,0,0.6);
+}
+
+
 html {
   scroll-behavior: smooth;
 }
