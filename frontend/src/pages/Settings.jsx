@@ -154,9 +154,9 @@ export default function Settings() {
         </p>
       </div>
 
-      {/* Global Success Banner */}
+      {/* Global Toast Message (Fixed floating at bottom-right — zero layout shift/jump) */}
       {savedSuccess && (
-        <div className="animate-fadeInUp" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', padding: '12px 18px', borderRadius: 12, fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="es-toast es-toast-success" style={{ position: 'fixed', bottom: 30, right: 30, zIndex: 9999 }}>
           <Check size={18} color="#059669" /> All settings saved & applied in real-time!
         </div>
       )}
