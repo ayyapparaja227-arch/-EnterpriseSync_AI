@@ -45,6 +45,17 @@ function AppRoutes() {
       const t = localStorage.getItem('es_token')
       const u = localStorage.getItem('es_user')
       if (t && u) setUser(JSON.parse(u))
+
+      // Apply saved theme on initial app launch
+      const savedTheme = localStorage.getItem('es_theme') || 'light'
+      const isDark = savedTheme === 'dark' || (savedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      if (isDark) {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        document.body.classList.add('dark-mode')
+      } else {
+        document.documentElement.removeAttribute('data-theme')
+        document.body.classList.remove('dark-mode')
+      }
     } catch (_) {}
     setReady(true)
   }, [])
