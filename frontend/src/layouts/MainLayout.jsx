@@ -3,7 +3,8 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FolderKanban, CheckSquare, Users,
   Building2, Package, AlertTriangle, Bell, FileText,
-  Settings, LogOut, Briefcase, Menu, X, User, ChevronRight, Sparkles, Search, Command
+  Settings, LogOut, Briefcase, Menu, X, User, ChevronRight, Sparkles, Search, Command,
+  Clock, Zap
 } from 'lucide-react'
 import GlobalSearchModal from '../components/GlobalSearchModal'
 import AiCopilotWidget from '../components/AiCopilotWidget'
@@ -13,6 +14,7 @@ const NAV_BY_ROLE = {
   employee: [
     { to: '/profile',       end: false, icon: User,            label: 'My Profile' },
     { to: '/tasks',         end: false, icon: CheckSquare,     label: 'My Tasks' },
+    { to: '/timesheets',    end: false, icon: Clock,           label: 'My Timesheet' },
     { to: '/assets',        end: false, icon: Package,         label: 'My Assets' },
     { to: '/notifications', end: false, icon: Bell,            label: 'Notifications' },
   ],
@@ -21,6 +23,7 @@ const NAV_BY_ROLE = {
     { to: '/employees',     end: false, icon: Users,           label: 'All Employees' },
     { to: '/projects',      end: false, icon: FolderKanban,    label: 'Projects' },
     { to: '/tasks',         end: false, icon: CheckSquare,     label: 'Tasks' },
+    { to: '/timesheets',    end: false, icon: Clock,           label: 'AI Timesheets' },
     { to: '/risk-prediction', end: false, icon: AlertTriangle, label: 'Risk Engine' },
     { to: '/reports',       end: false, icon: FileText,        label: 'Reports' },
     { to: '/notifications', end: false, icon: Bell,            label: 'Notifications' },
@@ -30,11 +33,13 @@ const NAV_BY_ROLE = {
     { to: '/employees',     end: false, icon: Users,           label: 'Manage Employees' },
     { to: '/projects',      end: false, icon: FolderKanban,    label: 'Projects' },
     { to: '/tasks',         end: false, icon: CheckSquare,     label: 'Tasks' },
+    { to: '/timesheets',    end: false, icon: Clock,           label: 'AI Timesheets' },
     { to: '/departments',   end: false, icon: Building2,       label: 'Departments' },
     { to: '/assets',        end: false, icon: Package,         label: 'Assets' },
     { to: '/risk-prediction', end: false, icon: AlertTriangle, label: 'Risk Engine' },
     { to: '/notifications', end: false, icon: Bell,            label: 'Notifications' },
     { to: '/reports',       end: false, icon: FileText,        label: 'Reports' },
+    { to: '/integrations',  end: false, icon: Zap,             label: 'Integrations' },
     { to: '/settings',      end: false, icon: Settings,        label: 'Settings' },
   ],
 }

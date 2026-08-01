@@ -13,6 +13,8 @@ import RiskPrediction from './pages/RiskPrediction'
 import Notifications from './pages/Notifications'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import Integrations from './pages/Integrations'
+import Timesheets from './pages/Timesheets'
 import { useIdleTimer, SessionTimeoutModal } from './hooks/useIdleTimer'
 
 // Role-based default home redirect
@@ -120,9 +122,15 @@ function AppRoutes() {
           <Route path="projects"        element={<Projects />} />
           <Route path="tasks"           element={<Tasks />} />
           <Route path="assets"          element={<Assets />} />
+          <Route path="timesheets"      element={<Timesheets />} />
           <Route path="risk-prediction" element={<RiskPrediction />} />
           <Route path="notifications"   element={<Notifications />} />
           <Route path="reports"         element={<Reports />} />
+          <Route path="integrations"    element={
+            <RoleGuard user={user} allowedRoles={['admin']}>
+              <Integrations />
+            </RoleGuard>
+          } />
         </Route>
 
         <Route path="*" element={<Navigate to={user ? (user.role === 'employee' ? '/profile' : '/') : '/login'} replace />} />
